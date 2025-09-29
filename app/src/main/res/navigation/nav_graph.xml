@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/dashboardFragment">
+
+    <fragment
+        android:id="@+id/dashboardFragment"
+        android:name="com.example.smartaquarium.DashboardFragment"
+        android:label="Dashboard" />
+
+    <fragment
+        android:id="@+id/analyticsFragment"
+        android:name="com.example.smartaquarium.AnalyticsFragment"
+        android:label="Analytics" />
+
+    <fragment
+        android:id="@+id/aquariumFragment"
+        android:name="com.example.smartaquarium.AquariumFragment"
+        android:label="Aquarium" />
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.example.smartaquarium.SettingsFragment"
+        android:label="Settings" />
+
+</navigation>

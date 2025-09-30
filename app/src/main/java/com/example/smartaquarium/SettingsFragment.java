@@ -14,12 +14,15 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 public class SettingsFragment extends Fragment {
 
     private SwitchCompat switchNotifications;
     private EditText etLightSchedule;
     private EditText etRefreshInterval;
     private Button btnSaveSettings;
+    private Button btnLogout;
 
     @Nullable
     @Override
@@ -31,6 +34,7 @@ public class SettingsFragment extends Fragment {
         etLightSchedule = view.findViewById(R.id.et_light_schedule);
         etRefreshInterval = view.findViewById(R.id.et_refresh_interval);
         btnSaveSettings = view.findViewById(R.id.btn_save_settings);
+        btnLogout = view.findViewById(R.id.btn_Logout);
 
         btnSaveSettings.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -38,6 +42,20 @@ public class SettingsFragment extends Fragment {
                 saveSettings();
             }
         });
+
+        btnLogout.setOnClickListener(v -> {
+            FirebaseAuth.getInstance().signOut();
+
+            // Hide bottom navigation
+            requireActivity().findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
+
+            // Replace with login fragment
+            requireActivity().getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.nav_host_fragment, new LoginFragment())
+                    .commit();
+        });
+
+
 
         return view;
     }

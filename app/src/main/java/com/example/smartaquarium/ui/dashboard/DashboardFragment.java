@@ -1,4 +1,4 @@
-package com.example.smartaquarium;
+package com.example.smartaquarium.ui.dashboard;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -9,6 +9,11 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
+import com.example.smartaquarium.utils.interfaces.IDataListener;
+import com.example.smartaquarium.ui.main.MainActivity;
+import com.example.smartaquarium.R;
+import com.example.smartaquarium.data.model.AquariumData;
 
 public class DashboardFragment extends Fragment implements IDataListener {
 

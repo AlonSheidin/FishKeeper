@@ -1,4 +1,4 @@
-package com.example.smartaquarium;
+package com.example.smartaquarium.data.model;
 
 public class AquariumData {
     public int temperature;

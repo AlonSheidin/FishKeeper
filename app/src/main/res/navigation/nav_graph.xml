@@ -6,22 +6,22 @@
 
     <fragment
         android:id="@+id/dashboardFragment"
-        android:name="com.example.smartaquarium.DashboardFragment"
+        android:name="com.example.smartaquarium.ui.dashboard.DashboardFragment"
         android:label="Dashboard" />
 
     <fragment
         android:id="@+id/analyticsFragment"
-        android:name="com.example.smartaquarium.AnalyticsFragment"
+        android:name="com.example.smartaquarium.ui.analyics.AnalyticsFragment"
         android:label="Analytics" />
 
     <fragment
         android:id="@+id/aquariumFragment"
-        android:name="com.example.smartaquarium.AquariumFragment"
+        android:name="com.example.smartaquarium.ui.aquarium.AquariumFragment"
         android:label="Aquarium" />
 
     <fragment
         android:id="@+id/settingsFragment"
-        android:name="com.example.smartaquarium.SettingsFragment"
+        android:name="com.example.smartaquarium.ui.settings.SettingsFragment"
         android:label="Settings" />
 
 </navigation>

@@ -1,4 +1,4 @@
-package com.example.smartaquarium;
+package com.example.smartaquarium.ui.main;
 
 import android.os.Bundle;
 
@@ -6,6 +6,14 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
+import com.example.smartaquarium.service.DummyConnection;
+import com.example.smartaquarium.utils.interfaces.IConnection;
+import com.example.smartaquarium.ui.login.LoginFragment;
+import com.example.smartaquarium.R;
+import com.example.smartaquarium.ui.settings.SettingsFragment;
+import com.example.smartaquarium.ui.analyics.AnalyticsFragment;
+import com.example.smartaquarium.ui.aquarium.AquariumFragment;
+import com.example.smartaquarium.ui.dashboard.DashboardFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;

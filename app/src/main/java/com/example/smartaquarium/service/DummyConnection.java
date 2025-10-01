@@ -1,13 +1,21 @@
-package com.example.smartaquarium;
+package com.example.smartaquarium.service;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.util.Log;
 
+import com.example.smartaquarium.data.model.AquariumData;
+import com.example.smartaquarium.utils.enums.EnumConnectionStatus;
+import com.example.smartaquarium.utils.interfaces.IConnection;
+import com.example.smartaquarium.utils.interfaces.IDataListener;
+
 import java.util.ArrayList;
 import java.util.Random;
 
 public class DummyConnection implements IConnection {
+
+    private EnumConnectionStatus status;
+
 
     private final ArrayList<IDataListener> listeners = new ArrayList<>();
     private Random random;
@@ -25,6 +33,7 @@ public class DummyConnection implements IConnection {
         handlerThread.start(); // Start the HandlerThread before accessing its Looper
         bgHandler = new Handler(handlerThread.getLooper());
         uiHandler = new Handler(Looper.getMainLooper());
+        status = EnumConnectionStatus.CONNECTED;
     }
 
     /**
@@ -41,13 +50,27 @@ public class DummyConnection implements IConnection {
 
     /**
      * Adds a listener to the list of listeners that will be notified of new data updates.
+     * This method is used to register an implementation of the `IDataListener` interface,
+     * which will receive updates whenever new aquarium data is generated.
      *
-     * @param listener An implementation of the IDataListener interface that will receive updates.
+     * @param listener An implementation of the `IDataListener` interface that will receive updates.
+     *                 The listener is added to the internal list of listeners.
      */
     public void addListener(IDataListener listener) {
         listeners.add(listener);
     }
 
+    /**
+     * Retrieves the current connection status of the `DummyConnection`.
+     * The status indicates whether the connection is active, disconnected, or in another state
+     * as defined by the `EnumConnectionStatus` enumeration.
+     * DummyConnection always returns `CONNECTED` as it simulates a stable connection.
+     *
+     * @return The current connection status as an `EnumConnectionStatus` value.
+     */
+    public EnumConnectionStatus getConnectionStatus() {
+        return status;
+    }
 
     /**
      * A Runnable task that generates random aquarium data and notifies all registered listeners.

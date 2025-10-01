@@ -1,4 +1,4 @@
-package com.example.smartaquarium;
+package com.example.smartaquarium.ui.login;
 
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -13,6 +13,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.smartaquarium.R;
+import com.example.smartaquarium.ui.dashboard.DashboardFragment;
 import com.google.firebase.auth.FirebaseAuth;
 
 public class LoginFragment extends Fragment {

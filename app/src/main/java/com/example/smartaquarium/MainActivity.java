@@ -14,12 +14,15 @@ import com.google.firebase.auth.FirebaseUser;
 public class MainActivity extends AppCompatActivity {
     private BottomNavigationView bottomNav;
     private FirebaseAuth auth;
-
+    public IConnection connection;
 
     void Init()
     {
         bottomNav = findViewById(R.id.bottom_navigation);
         auth = FirebaseAuth.getInstance();
+
+        // TODO switch to real connection
+        connection = new DummyConnection();
     }
 
 
@@ -34,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
         FirebaseUser currentUser = auth.getCurrentUser();
 
-        if (currentUser == null) {
+        if (currentUser == null) { //if user not logged in
             // Show login first
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.nav_host_fragment, new LoginFragment())
@@ -73,5 +76,9 @@ public class MainActivity extends AppCompatActivity {
                 .addToBackStack(null)
                 .replace(R.id.nav_host_fragment, fragment)
                 .commit();
+    }
+
+    public IConnection getConnection() {
+        return connection;
     }
 }

@@ -10,14 +10,32 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.example.smartaquarium.R;
+public class DashboardFragment extends Fragment implements IDataListener {
 
-public class DashboardFragment extends Fragment {
+    private TextView tvPhOverview;
+    private TextView tvOxygenOverview;
+    private TextView tvWaterOverview;
+    private TextView tvAlerts;
+    private TextView tvTempOverview;
 
-    private TextView tvTempOverview, tvPhOverview, tvOxygenOverview, tvWaterOverview, tvAlerts;
+    private View root;
 
     public DashboardFragment() {
-        // Required empty public constructor
+
+    }
+
+    void InitViews(View root) {
+        tvTempOverview = root.findViewById(R.id.tv_temp_overview);
+        tvPhOverview = root.findViewById(R.id.tv_ph_overview);
+        tvOxygenOverview = root.findViewById(R.id.tv_oxygen_overview);
+        tvWaterOverview = root.findViewById(R.id.tv_water_overview);
+        tvAlerts = root.findViewById(R.id.tv_alerts);
+    }
+
+    private void addListenerToConnection() {
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).getConnection().addListener(this);
+        }
     }
 
     @Nullable
@@ -25,21 +43,25 @@ public class DashboardFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        View root = inflater.inflate(R.layout.fragment_dashboard, container, false);
+        root = inflater.inflate(R.layout.fragment_dashboard, container, false);
+        InitViews(root);
 
-        tvTempOverview = root.findViewById(R.id.tv_temp_overview);
-        tvPhOverview = root.findViewById(R.id.tv_ph_overview);
-        tvOxygenOverview = root.findViewById(R.id.tv_oxygen_overview);
-        tvWaterOverview = root.findViewById(R.id.tv_water_overview);
-        tvAlerts = root.findViewById(R.id.tv_alerts);
+        addListenerToConnection();
 
-        // TODO: Load real values from Firebase
-        tvTempOverview.setText("Temp: 25 °C");
-        tvPhOverview.setText("pH: 7.4");
-        tvOxygenOverview.setText("Oxygen: 6.5 mg/L");
-        tvWaterOverview.setText("Water: 80%");
-        tvAlerts.setText("Alerts: All good ✅");
+        tvTempOverview.setText("Temp: Loading...");
+        tvPhOverview.setText("pH: Loading...");
+        tvOxygenOverview.setText("Oxygen: Loading...");
+        tvWaterOverview.setText("Water: Loading...");
+        tvAlerts.setText("Alerts: Loading...");
 
         return root;
+    }
+
+    @Override
+    public void onNewData(AquariumData data) {
+        tvTempOverview.setText("Temp: "+data.temperature+" °C");
+        tvPhOverview.setText("pH: "+data.ph);
+        tvOxygenOverview.setText("Oxygen: "+data.oxygen+" mg/L");
+
     }
 }

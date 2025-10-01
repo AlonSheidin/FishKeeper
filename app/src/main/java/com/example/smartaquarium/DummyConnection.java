@@ -66,7 +66,7 @@ public class DummyConnection implements IConnection {
             notifyListeners(data);
 
             // Schedule the next execution of this task after 60 seconds
-            bgHandler.postDelayed(this, 60000);
+            bgHandler.postDelayed(this, 6000);
         }
     };
 

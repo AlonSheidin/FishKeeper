@@ -5,7 +5,9 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
+import com.example.smartaquarium.data.viewModel.AquariumViewModel;
 import com.example.smartaquarium.service.DummyConnection;
 import com.example.smartaquarium.utils.interfaces.IConnection;
 import com.example.smartaquarium.ui.login.LoginFragment;
@@ -24,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     public IConnection connection;
 
+
     void Init()
     {
         bottomNav = findViewById(R.id.bottom_navigation);
@@ -31,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
 
         // TODO switch to real connection
         connection = new DummyConnection();
+        new ViewModelProvider(this).get(AquariumViewModel.class).setAsListenerTo(connection);
+
+
     }
 
 
@@ -41,7 +47,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Init();
         setupBottomNavigation();
-
 
         FirebaseUser currentUser = auth.getCurrentUser();
 

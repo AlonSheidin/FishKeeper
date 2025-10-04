@@ -14,11 +14,13 @@ import java.util.Random;
 
 public class DummyConnection implements IConnection {
 
-    private EnumConnectionStatus status;
-
 
     private final ArrayList<IDataListener> listeners = new ArrayList<>();
+    private EnumConnectionStatus connectionStatus;
+
+
     private Random random;
+
     private HandlerThread handlerThread;
     private Handler bgHandler;
     private Handler uiHandler;
@@ -33,7 +35,7 @@ public class DummyConnection implements IConnection {
         handlerThread.start(); // Start the HandlerThread before accessing its Looper
         bgHandler = new Handler(handlerThread.getLooper());
         uiHandler = new Handler(Looper.getMainLooper());
-        status = EnumConnectionStatus.CONNECTED;
+        connectionStatus = EnumConnectionStatus.CONNECTED;
     }
 
     /**
@@ -69,7 +71,7 @@ public class DummyConnection implements IConnection {
      * @return The current connection status as an `EnumConnectionStatus` value.
      */
     public EnumConnectionStatus getConnectionStatus() {
-        return status;
+        return connectionStatus;
     }
 
     /**
@@ -83,13 +85,16 @@ public class DummyConnection implements IConnection {
             AquariumData data = new AquariumData(
                     random.nextInt(30) + 15, // Temperature between 15 and 45
                     random.nextInt(100),    // pH between 0 and 100
-                    random.nextInt(100));   // Oxygen between 0 and 100
+                    random.nextInt(100),   // Oxygen between 0 and 100
+                    random.nextInt(100) // Water level between 0 and 100
+
+            );
 
             // Notify all registered listeners with the generated data
             notifyListeners(data);
 
-            // Schedule the next execution of this task after 60 seconds
-            bgHandler.postDelayed(this, 6000);
+            // Schedule the next execution of this task after 30 seconds
+            bgHandler.postDelayed(this, 5000);
         }
     };
 
@@ -102,8 +107,13 @@ public class DummyConnection implements IConnection {
     private void notifyListeners(AquariumData data) {
         // Update UI on main thread
         for (IDataListener listener : listeners) {
-            Log.println(Log.INFO, "DummyConnection", "Notifying listener ("+listener.getClass().getName()+"): " +"temperature="+ data.temperature + ", ph=" + data.ph + ", oxygen=" + data.oxygen);
-            uiHandler.post(() -> listener.onNewData(data));
+            Log.println(Log.INFO, "DummyConnection", "Notifying listener ("+listener.getClass().getName()+"): date="+data.date.getTime() +" temperature="+ data.temperature + ", ph=" + data.ph + ", oxygen=" + data.oxygen);
+
+            uiHandler.post(() -> {
+                listener.onNewData(data);
+                listener.onConnectionStatusChanged(connectionStatus);
+            });
+
         }
     }
 }

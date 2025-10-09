@@ -15,19 +15,13 @@ import com.example.smartaquarium.R;
 import com.example.smartaquarium.data.model.AquariumData;
 import com.example.smartaquarium.data.viewModel.AquariumViewModel;
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.formatter.ValueFormatter;
 
 
-import java.lang.reflect.Array;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 public class AnalyticsFragment extends Fragment  {
 
@@ -40,7 +34,21 @@ public class AnalyticsFragment extends Fragment  {
     public AnalyticsFragment() {}
 
 
-    private int n = 0;
+
+    private static class EntryCount {
+        int temperature;
+        int ph;
+        int oxygen;
+        int waterLevel;
+
+        EntryCount(int temperature, int ph, int oxygen, int waterLevel) {
+            this.temperature = temperature;
+            this.ph = ph;
+            this.oxygen = oxygen;
+            this.waterLevel = waterLevel;
+        }
+    }    private final EntryCount entryCount = new EntryCount(0, 0, 0, 0);
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -54,18 +62,22 @@ public class AnalyticsFragment extends Fragment  {
         viewModel = new ViewModelProvider(requireActivity()).get(AquariumViewModel.class);
         setupObservers();
 
-
-
         return root;
     }
+
+
     private void setupObservers() {
+
         // 1. Load full history once
-        ArrayList<AquariumData> history = (ArrayList<AquariumData>) viewModel.getHistory().getValue();
+        List<AquariumData> history = viewModel.getHistory().getValue();
+        if(history == null) history = new ArrayList<>(); // Handle null case
+        else history = new ArrayList<>(history); // Make mutable copy
+
         if (dataSet == null) { // Only initialize once
             List<Entry> entries = new ArrayList<>();
             for (AquariumData data : history) {
-                entries.add(new Entry(n, data.temperature));
-                n++;
+                entries.add(new Entry(entryCount.temperature, data.temperature));
+                entryCount.temperature++;
             }
             dataSet = new LineDataSet(entries, "Temperature");
             dataSet.setColor(Color.RED);
@@ -81,15 +93,16 @@ public class AnalyticsFragment extends Fragment  {
         // 2. Append only new points
         viewModel.getLatestData().observe(getViewLifecycleOwner(), data -> {
             if (dataSet != null && lineData != null) {
-                Entry entry = new Entry(n, data.temperature);
+                Entry entry = new Entry(entryCount.temperature, data.temperature);
                 dataSet.addEntry(entry);
                 lineData.notifyDataChanged();
                 lineChart.notifyDataSetChanged();
                 lineChart.invalidate(); // redraw with appended point
-                n++;
+                entryCount.temperature++;
             }
         });
     }
+
 
 
 }

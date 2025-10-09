@@ -1,6 +1,8 @@
 package com.example.smartaquarium.ui.main;
 
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,18 +27,16 @@ public class MainActivity extends AppCompatActivity {
     private BottomNavigationView bottomNav;
     private FirebaseAuth auth;
     public IConnection connection;
+    private static AquariumViewModel aquariumViewModel;
 
-
-    void Init()
+    void init()
     {
         bottomNav = findViewById(R.id.bottom_navigation);
         auth = FirebaseAuth.getInstance();
-
         // TODO switch to real connection
         connection = new DummyConnection();
-        new ViewModelProvider(this).get(AquariumViewModel.class).setAsListenerTo(connection);
-
-
+        aquariumViewModel = new ViewModelProvider(this).get(AquariumViewModel.class);
+        aquariumViewModel.setAsListenerTo(connection);
     }
 
 
@@ -44,21 +44,30 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         FirebaseApp.initializeApp(this);
-        setContentView(R.layout.activity_main);
-        Init();
-        setupBottomNavigation();
-
+        init();
         FirebaseUser currentUser = auth.getCurrentUser();
 
+        setContentView(R.layout.activity_main);
+        setupBottomNavigation();
+
+
         if (currentUser == null) { //if user not logged in
+            findViewById(R.id.bottom_navigation).setVisibility(View.GONE);
             // Show login first
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.nav_host_fragment, new LoginFragment())
                     .commit();
+
+
         } else {
+            findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
+            Log.i("Uid1", "onCreate: uid="+currentUser.getUid());
+            aquariumViewModel.OnUserLogin();
             // Show main app
             loadFragment(new DashboardFragment());
+
         }
+
     }
 
     private void setupBottomNavigation() {
@@ -91,7 +100,5 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
 
-    public IConnection getConnection() {
-        return connection;
-    }
+
 }

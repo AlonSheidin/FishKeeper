@@ -12,11 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.smartaquarium.R;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+
 
 public class AquariumFragment extends Fragment {
 
@@ -27,7 +23,6 @@ public class AquariumFragment extends Fragment {
     private Button btnFeedFish;
     private Button btnToggleLight;
 
-    private DatabaseReference database;
 
     @Nullable
     @Override

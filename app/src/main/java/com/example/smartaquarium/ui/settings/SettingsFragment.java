@@ -25,17 +25,30 @@ public class SettingsFragment extends Fragment {
     private Button btnSaveSettings;
     private Button btnLogout;
 
+
+    /**
+     * Initializes the view components of the fragment. This method is intended to be called
+     * after the fragment's view has been created. It finds and assigns the UI elements
+     * (switches, text fields, buttons) from the layout file to their corresponding
+     * class variables and sets up their initial state and listeners.
+     *
+     * @param view The root view of the fragment's layout, used to find the child views.
+     */
+    private void init(View view) {
+        switchNotifications = view.findViewById(R.id.switch_notifications);
+        etLightSchedule = view.findViewById(R.id.et_light_schedule);
+        etRefreshInterval = view.findViewById(R.id.et_refresh_interval);
+        btnSaveSettings = view.findViewById(R.id.btn_save_settings);
+        btnLogout = view.findViewById(R.id.btn_Logout);
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_settings, container, false);
 
-        switchNotifications = view.findViewById(R.id.switch_notifications);
-        etLightSchedule = view.findViewById(R.id.et_light_schedule);
-        etRefreshInterval = view.findViewById(R.id.et_refresh_interval);
-        btnSaveSettings = view.findViewById(R.id.btn_save_settings);
-        btnLogout = view.findViewById(R.id.btn_Logout);
+        init(view);
 
         btnSaveSettings.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -61,6 +74,7 @@ public class SettingsFragment extends Fragment {
         return view;
     }
 
+    //TODO: Implement saving settings to SharedPreferences or Firebase
     private void saveSettings() {
         boolean notificationsEnabled = switchNotifications.isChecked();
         String lightSchedule = etLightSchedule.getText().toString();

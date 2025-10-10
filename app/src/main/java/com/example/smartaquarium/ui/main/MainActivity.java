@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.smartaquarium.data.viewModel.AquariumViewModel;
+import com.example.smartaquarium.data.viewModel.AquariumDataViewModel;
 import com.example.smartaquarium.service.DummyConnection;
 import com.example.smartaquarium.utils.interfaces.IConnection;
 import com.example.smartaquarium.ui.login.LoginFragment;
@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
     private BottomNavigationView bottomNav;
     private FirebaseAuth auth;
     public IConnection connection;
-    private static AquariumViewModel aquariumViewModel;
+    private static AquariumDataViewModel aquariumDataViewModel;
 
     void init()
     {
@@ -35,8 +35,8 @@ public class MainActivity extends AppCompatActivity {
         auth = FirebaseAuth.getInstance();
         // TODO switch to real connection
         connection = new DummyConnection();
-        aquariumViewModel = new ViewModelProvider(this).get(AquariumViewModel.class);
-        aquariumViewModel.setAsListenerTo(connection);
+        aquariumDataViewModel = new ViewModelProvider(this).get(AquariumDataViewModel.class);
+        aquariumDataViewModel.setAsListenerTo(connection);
     }
 
 
@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
             Log.i("Uid1", "onCreate: uid="+currentUser.getUid());
-            aquariumViewModel.OnUserLogin();
+            aquariumDataViewModel.onUserLogin();
             // Show main app
             loadFragment(new DashboardFragment());
 

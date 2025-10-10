@@ -2,4 +2,10 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- Chart Colors -->
+    <color name="chart_temperature">#FF0000</color> <!-- Red -->
+    <color name="chart_ph">#0000FF</color>         <!-- Blue -->
+    <color name="chart_oxygen">#008000</color>    <!-- Green -->
+    <color name="chart_water_level">#00FFFF</color>
+
 </resources>

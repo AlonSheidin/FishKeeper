@@ -1,6 +1,6 @@
 package com.example.smartaquarium.ui.analyics;
 
-import android.graphics.Color;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,14 +9,16 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 
+import androidx.annotation.ColorRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.smartaquarium.R;
 import com.example.smartaquarium.data.model.AquariumData;
-import com.example.smartaquarium.data.viewModel.AquariumViewModel;
+import com.example.smartaquarium.data.viewModel.AquariumDataViewModel;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
@@ -25,25 +27,104 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
+/**
+ * A {@link Fragment} that displays historical aquarium data in a line chart.
+ *
+ * <p>This fragment visualizes various sensor readings (like temperature, pH, etc.) over time.
+ * It uses the {@link AquariumDataViewModel} to observe live data updates and historical records.
+ * A {@link Spinner} allows the user to select which data type to display on the chart. The chart
+ * is powered by the MPAndroidChart library.</p>
+ *
+ * <p>The fragment handles:
+ * <ul>
+ *     <li>Initializing and styling the {@link LineChart}.</li>
+ *     <li>Populating a {@link Spinner} with available data types from the {@code DataType} enum.</li>
+ *     <li>Observing historical data to populate the chart initially.</li>
+ *     <li>Observing the latest data point to append it to the chart in real-time.</li>
+ *     <li>Updating the chart when the user selects a different data type from the spinner.</li>
+ * </ul>
+ * </p>
+ */
 public class AnalyticsFragment extends Fragment {
 
     // A constant to define the default number of visible entries
     private static final int MAX_VISIBLE_ENTRIES = 15;
 
     /**
-     * Enum to represent the different data types that can be displayed.
+     * Represents the different types of aquarium data that can be displayed in the chart.
+     *
+     * <p>Each enum constant holds metadata for a specific data type, including:
+     * <ul>
+     *     <li>A user-friendly {@code label} for display in UI components like Spinners.</li>
+     *     <li>A {@code colorResId} to consistently style the chart for that data type.</li>
+     *     <li>A {@code valueExtractor} function to retrieve the correct integer value from an
+     *     {@link AquariumData} object.</li>
+     * </ul>
+     * This design encapsulates the logic for handling different data streams, making it easy
+     * to add new data types in the future.
      */
     private enum DataType {
-        TEMPERATURE,
-        PH,
-        OXYGEN,
-        WATER_LEVEL
+        TEMPERATURE("Temperature", R.color.chart_temperature, AquariumData::getTemperature),
+        PH("pH Level", R.color.chart_ph, AquariumData::getPh),
+        OXYGEN("Oxygen Level", R.color.chart_oxygen, AquariumData::getOxygen),
+        WATER_LEVEL("Water Level", R.color.chart_water_level, AquariumData::getWaterLevel);
+
+        private final String label;
+        @ColorRes
+        private final int colorResId;
+        private final Function<AquariumData, Integer> valueExtractor;
+
+        /**
+         * Constructs a new DataType enum constant.
+         *
+         * @param label The user-friendly name for the data type, used in the UI (e.g., "Temperature").
+         * @param colorResId The resource ID of the color to use for this data type's chart line.
+         * @param valueExtractor A function that takes an AquariumData object and returns the specific integer value for this data type (e.g., `AquariumData::getTemperature`).
+         */
+        DataType(String label, @ColorRes int colorResId, Function<AquariumData, Integer> valueExtractor) {
+            this.label = label;
+            this.colorResId = colorResId;
+            this.valueExtractor = valueExtractor;
+        }
+
+        /**
+         * Extracts the relevant integer value from an AquariumData object.
+         * This method uses the function defined for the enum constant to retrieve
+         * the correct data point (e.g., temperature, pH).
+         *
+         * @param data The AquariumData object from which to extract the value.
+         * @return The integer value corresponding to this data type.*/
+        public int getValue(AquariumData data) {
+            return valueExtractor.apply(data);
+        }
+
+        /**
+         * Gets the resolved color integer for this data type.
+         *
+         * @param context The context used to resolve the color resource.
+         * @return The resolved ARGB color integer.
+         */
+        public int getColor(@NonNull Context context) {
+            return ContextCompat.getColor(context, this.colorResId);
+        }
+
+        /**
+         * Returns the user-friendly label for the data type.
+         *
+         * @return The string representation of the enum, which is its label.
+         */
+        @NonNull
+        @Override
+        public String toString() {
+            return this.label;
+        }
     }
 
     private LineChart lineChart;
     private Spinner dataTypeSpinner;
-    private AquariumViewModel aquariumViewModel;
+    private AquariumDataViewModel aquariumDataViewModel;
 
     private DataType currentDataType = DataType.TEMPERATURE; // Default to temperature
     private List<AquariumData> historyData; // Cache for the full history
@@ -70,7 +151,7 @@ public class AnalyticsFragment extends Fragment {
         dataTypeSpinner = view.findViewById(R.id.spinner_data_type);
 
         // Initialize ViewModel
-        aquariumViewModel = new ViewModelProvider(requireActivity()).get(AquariumViewModel.class);
+        aquariumDataViewModel = new ViewModelProvider(requireActivity()).get(AquariumDataViewModel.class);
 
         // Set up UI components
         setupChartStyling();
@@ -85,6 +166,7 @@ public class AnalyticsFragment extends Fragment {
     }
 
     private void setupSpinner() {
+
         // Create an adapter for the spinner from the DataType enum
         ArrayAdapter<DataType> adapter = new ArrayAdapter<>(
                 requireContext(), // Use context from the fragment
@@ -105,7 +187,7 @@ public class AnalyticsFragment extends Fragment {
                 if (selectedType != currentDataType) {
                     currentDataType = selectedType;
                     // Redraw the entire chart with the new data type
-                    if (historyData != null) {
+                    if (historyData != null && !historyData.isEmpty()) {
                         populateInitialChart(historyData);
                     }
                 }
@@ -119,7 +201,7 @@ public class AnalyticsFragment extends Fragment {
     }
 
     private void setupDataObservers() {
-        aquariumViewModel.getHistory().observe(getViewLifecycleOwner(), history -> {
+        aquariumDataViewModel.getHistory().observe(getViewLifecycleOwner(), history -> {
             if (history != null && !history.isEmpty()) {
                 // Cache the history and populate the chart
                 this.historyData = history;
@@ -127,7 +209,7 @@ public class AnalyticsFragment extends Fragment {
             }
         });
 
-        aquariumViewModel.getLatestData().observe(getViewLifecycleOwner(), newData -> {
+        aquariumDataViewModel.getLatestData().observe(getViewLifecycleOwner(), newData -> {
             if (newData != null && lineChart.getData() != null && lineChart.getData().getDataSetCount() > 0) {
                 appendDataToChart(newData);
             }
@@ -139,72 +221,47 @@ public class AnalyticsFragment extends Fragment {
         for (int i = 0; i < history.size(); i++) {
             AquariumData data = history.get(i);
             // Get the correct value based on the currentDataType
-            float value = getValueForDataType(data, currentDataType);
+            int value = currentDataType.getValue(data);
             entries.add(new Entry(i, value));
         }
 
         // Get label and color for the selected data type
-        String label = getLabelForDataType(currentDataType);
-        int color = getColorForDataType(currentDataType);
+        String label = currentDataType.toString();
+        int color = currentDataType.getColor(requireContext());
 
         LineDataSet dataSet = new LineDataSet(entries, label);
         dataSet.setColor(color);
         dataSet.setCircleColor(color);
         dataSet.setDrawValues(false);
 
-        LineData lineData = new LineData(dataSet);
-        lineChart.setData(lineData);
-        lineChart.setVisibleXRangeMaximum(MAX_VISIBLE_ENTRIES);
-        lineChart.moveViewToX(lineData.getEntryCount());
+        lineChart.setData(new LineData(dataSet));
+        moveChartViewToLastEntry();
         // Refresh the chart to apply changes
         lineChart.invalidate();
     }
 
     private void appendDataToChart(@NonNull AquariumData data) {
         LineData lineData = lineChart.getData();
-        if (lineData == null) return;
+        if (lineData == null) throw new IllegalStateException("DataSet should not be null");
         ILineDataSet dataSet = lineData.getDataSetByIndex(0);
-        if (dataSet == null) return;
+        if (dataSet == null) throw new IllegalStateException("DataSet should not be null");
 
         // Get the correct value based on the current selection
-        float value = getValueForDataType(data, currentDataType);
+        int value = currentDataType.getValue(data);
         Entry newEntry = new Entry(dataSet.getEntryCount(), value);
 
         lineData.addEntry(newEntry, 0);
         lineData.notifyDataChanged();
         lineChart.notifyDataSetChanged();
 
+        moveChartViewToLastEntry();
+    }
+
+    /** Helper method to move the chart view to the last entry. */
+    private void moveChartViewToLastEntry() {
+        // Set the maximum number of visible entries.
         lineChart.setVisibleXRangeMaximum(MAX_VISIBLE_ENTRIES);
-        lineChart.moveViewToX(lineData.getEntryCount());
-    }
-
-    /** Helper method to get the correct data value from AquariumData. */
-    private float getValueForDataType(AquariumData data, DataType type) {
-        return switch (type) {
-            case TEMPERATURE -> data.getTemperature();
-            case PH -> data.getPh();
-            case OXYGEN -> data.getOxygen();
-            case WATER_LEVEL -> data.getWaterLevel();
-        };
-    }
-
-    /** Helper method to get a display label for the dataset. */
-    private String getLabelForDataType(DataType type) {
-        return switch (type) {
-            case TEMPERATURE -> "Temperature";
-            case PH -> "pH Level";
-            case OXYGEN -> "Oxygen";
-            case WATER_LEVEL -> "Water Level";
-        };
-    }
-
-    /** Helper method to get a color for the dataset. */
-    private int getColorForDataType(DataType type) {
-        return switch (type) {
-            case TEMPERATURE -> Color.RED;
-            case PH -> Color.BLUE;
-            case OXYGEN -> Color.GREEN;
-            case WATER_LEVEL -> Color.CYAN;
-        };
+        // Move the viewport to the end of the chart.
+        lineChart.moveViewToX(lineChart.getData().getEntryCount());
     }
 }

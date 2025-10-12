@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.smartaquarium.data.viewModel.AquariumDataViewModel;
+import com.example.smartaquarium.data.viewModel.aquariumData.AquariumDataViewModel;
 import com.example.smartaquarium.service.DummyConnection;
 import com.example.smartaquarium.utils.interfaces.IConnection;
 import com.example.smartaquarium.ui.login.LoginFragment;
@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
             Log.i("Uid1", "onCreate: uid="+currentUser.getUid());
-            aquariumDataViewModel.onUserLogin();
+            aquariumDataViewModel.checkUserAuthentication();
             // Show main app
             loadFragment(new DashboardFragment());
 

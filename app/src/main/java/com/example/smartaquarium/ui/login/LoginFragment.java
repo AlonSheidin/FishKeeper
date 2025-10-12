@@ -12,8 +12,10 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.smartaquarium.R;
+import com.example.smartaquarium.data.viewModel.aquariumData.AquariumDataViewModel;
 import com.example.smartaquarium.ui.dashboard.DashboardFragment;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -21,13 +23,22 @@ public class LoginFragment extends Fragment {
 
     private FirebaseAuth auth;
     private EditText etEmail, etPassword;
-    private Button btnSignIn, btnSignUp;
+    private Button btnSignIn;
+    private Button btnSignUp;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_login, container, false);
 
+        init(view);
+
+        btnSignIn.setOnClickListener(v -> signIn());
+        btnSignUp.setOnClickListener(v -> signUp());
+        return view;
+    }
+
+    private void init(View view) {
         auth = FirebaseAuth.getInstance();
 
         etEmail = view.findViewById(R.id.etEmail);
@@ -35,10 +46,6 @@ public class LoginFragment extends Fragment {
         btnSignIn = view.findViewById(R.id.btnSignIn);
         btnSignUp = view.findViewById(R.id.btnSignUp);
 
-        btnSignIn.setOnClickListener(v -> signIn());
-        btnSignUp.setOnClickListener(v -> signUp());
-
-        return view;
     }
 
     private void signUp() {
@@ -76,11 +83,13 @@ public class LoginFragment extends Fragment {
                         requireActivity().findViewById(R.id.bottom_navigation).setVisibility(View.VISIBLE);
 
                         Toast.makeText(getContext(), "Welcome!", Toast.LENGTH_SHORT).show();
+                        new ViewModelProvider(requireActivity()).get(AquariumDataViewModel.class).checkUserAuthentication();
                         navigateToDashboard();
                     } else {
                         Toast.makeText(getContext(), "Error: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
+
     }
 
     private void navigateToDashboard() {

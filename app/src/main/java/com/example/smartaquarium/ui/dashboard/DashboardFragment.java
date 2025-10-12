@@ -11,7 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.smartaquarium.data.viewModel.AquariumDataViewModel;
+import com.example.smartaquarium.data.viewModel.aquariumData.AquariumDataViewModel;
 import com.example.smartaquarium.R;
 
 public class DashboardFragment extends Fragment  {

@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">SmartAquarium</string>
+    <string name="aquarium_overview">Aquarium Overview</string>
+    <string name="last_updated_never">Last Updated: Never</string>
+    <string name="temperature">temperature</string>
+    <string name="ph_level">ph level</string>
+    <string name="oxygen_level">oxygen level</string>
+    <string name="water_level">water level</string>
+    <string name="last_updated_empty">Last Updated:</string>
 </resources>

@@ -1,80 +1,130 @@
 package com.example.smartaquarium.ui.aquarium;
 
+import android.app.Application;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.smartaquarium.R;
-
+import com.example.smartaquarium.data.viewModel.aquarium.AquariumViewModel;
+import com.example.smartaquarium.data.viewModel.aquarium.AquariumViewModelFactory;
+import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.data.BarData;
 
 public class AquariumFragment extends Fragment {
 
-    private TextView tvTemperature;
-    private TextView tvPH;
-    private TextView tvWaterLevel;
-    private TextView tvLastUpdate;
-    private Button btnFeedFish;
-    private Button btnToggleLight;
+    // --- Views and ViewModel ---
+    private BarChart barChartTemperature;
+    private BarChart barChartPh;
+    private BarChart barChartOxygen;
+    private BarChart barChartWaterLevel;
+    private TextView textViewLastUpdate;
 
+    private AquariumViewModel aquariumViewModel;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_aquarium, container, false);
-
-        // Bind views
-        tvTemperature = view.findViewById(R.id.tv_temperature);
-        tvPH = view.findViewById(R.id.tv_ph);
-        tvWaterLevel = view.findViewById(R.id.tv_water_level);
-        tvLastUpdate = view.findViewById(R.id.tv_last_update);
-        btnFeedFish = view.findViewById(R.id.btn_feed_fish);
-        btnToggleLight = view.findViewById(R.id.btn_toggle_light);
-
-        // Firebase
-        // TODO implement firebase
-
-        //database = FirebaseDatabase.getInstance().getReference("aquariumData");
-        //loadAquariumData();
-
-        // Button actions
-        btnFeedFish.setOnClickListener( v -> {});
-
-        btnToggleLight.setOnClickListener(v -> {});
-
-        //TODO remove set data
-        tvTemperature.setText("Temperature: 25 °C");
-        tvPH.setText("pH Level: 7.2");
-        tvWaterLevel.setText("Water Level: Full");
-        tvLastUpdate.setText("Last updated: Just now");
-
-        return view;
+        return inflater.inflate(R.layout.fragment_aquarium, container, false);
     }
 
-    /*private void loadAquariumData() {
-        database.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                tvTemperature.setText("Temperature: " + snapshot.child("temperature").getValue() + " °C");
-                tvPH.setText("pH Level: " + snapshot.child("ph").getValue());
-                tvWaterLevel.setText("Water Level: " + snapshot.child("waterLevel").getValue());
-                tvLastUpdate.setText("Last updated: " + snapshot.child("lastUpdate").getValue());
-            }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initialize(view);
+        observeViewModel();
+    }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                tvTemperature.setText("Temperature: --");
-                tvPH.setText("pH Level: --");
-                tvWaterLevel.setText("Water Level: --");
-                tvLastUpdate.setText("Last updated: --");
-            }
-        });
-    }*/
+    /**
+     * Initializes all views and the ViewModel for the first time.
+     */
+    private void initialize(@NonNull View view) {
+        // Bind views from the layout
+        barChartTemperature = view.findViewById(R.id.barChart_temperature);
+        barChartPh = view.findViewById(R.id.barChart_ph);
+        barChartOxygen = view.findViewById(R.id.barChart_oxygen);
+        barChartWaterLevel = view.findViewById(R.id.barChart_waterLevel);
+        textViewLastUpdate = view.findViewById(R.id.textView_lastUpdate);
+
+        // Style the charts
+        styleBarChart(barChartTemperature);
+        styleBarChart(barChartPh);
+        styleBarChart(barChartOxygen);
+        styleBarChart(barChartWaterLevel);
+
+        // Get the ViewModel using its factory
+        Application application = requireActivity().getApplication();
+        FragmentActivity owner = requireActivity();
+        AquariumViewModelFactory factory = new AquariumViewModelFactory(application, owner);
+        aquariumViewModel = new ViewModelProvider(this, factory).get(AquariumViewModel.class);
+    }
+
+    /**
+     * Sets up observers on the ViewModel's LiveData to react to data changes.
+     */
+    private void observeViewModel() {
+        // Observe the BarData for temperature
+        aquariumViewModel.temperatureBarData.observe(getViewLifecycleOwner(), barData ->
+            updateChart(barChartTemperature, barData)
+        );
+
+        // Observe the BarData for pH
+        aquariumViewModel.phBarData.observe(getViewLifecycleOwner(), barData ->
+            updateChart(barChartPh, barData)
+        );
+
+        // Observe the BarData for oxygen
+        aquariumViewModel.oxygenBarData.observe(getViewLifecycleOwner(), barData ->
+            updateChart(barChartOxygen, barData)
+        );
+
+        // Observe the BarData for water level
+        aquariumViewModel.waterLevelBarData.observe(getViewLifecycleOwner(), barData ->
+            updateChart(barChartWaterLevel, barData)
+        );
+
+        // Observe the timestamp string
+        aquariumViewModel.lastUpdatedTimestamp.observe(getViewLifecycleOwner(), timestampText ->
+            textViewLastUpdate.setText(timestampText)
+        );
+    }
+
+    /**
+     * A helper method to apply common styling to a BarChart.
+     */
+    private void styleBarChart(BarChart chart) {
+        chart.getDescription().setEnabled(false);
+        chart.getLegend().setEnabled(false);
+        chart.setDrawValueAboveBar(true);
+        chart.setFitBars(true);
+        chart.setTouchEnabled(false); // Disable interaction for a display-only chart
+
+        XAxis xAxis = chart.getXAxis();
+        xAxis.setDrawGridLines(false);
+        xAxis.setDrawAxisLine(false);
+        xAxis.setDrawLabels(false);
+
+        chart.getAxisLeft().setDrawLabels(false);
+        chart.getAxisLeft().setDrawGridLines(false);
+        chart.getAxisLeft().setDrawAxisLine(false);
+        chart.getAxisRight().setEnabled(false);
+    }
+
+    /**
+     * A helper method to update a chart's data and refresh it.
+     */
+    private void updateChart(BarChart chart, BarData barData) {
+        chart.setData(barData);
+        chart.invalidate(); // Refresh the chart
+    }
 }

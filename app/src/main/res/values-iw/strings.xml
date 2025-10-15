@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SmartAquarium</string>
+    <string name="aquarium_overview">סקירת אקווריום</string>
+    <string name="last_updated_never">עודכן לאחרונה: אף פעם</string>
+    <string name="temperature">טמפרטורה</string>
+    <string name="ph_level">רמת חומציות</string>
+    <string name="oxygen_level">רמת חמצן</string>
+    <string name="water_level">מפלס מים</string>
+    <string name="last_updated_empty">עודכן לאחרונה:</string>
+</resources>

@@ -1,5 +1,6 @@
 package com.example.smartaquarium.ui.aquarium;
 
+import android.animation.ValueAnimator;
 import android.app.Application;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -19,6 +20,11 @@ import com.example.smartaquarium.data.viewModel.aquarium.AquariumViewModelFactor
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class AquariumFragment extends Fragment {
 
@@ -30,6 +36,8 @@ public class AquariumFragment extends Fragment {
     private TextView textViewLastUpdate;
 
     private AquariumViewModel aquariumViewModel;
+
+    private final Map<BarChart, Float> lastChartValues = new HashMap<>();
 
     @Nullable
     @Override
@@ -114,17 +122,56 @@ public class AquariumFragment extends Fragment {
         xAxis.setDrawAxisLine(false);
         xAxis.setDrawLabels(false);
 
+        // Make sure the Y-axis redraws properly
         chart.getAxisLeft().setDrawLabels(false);
         chart.getAxisLeft().setDrawGridLines(false);
         chart.getAxisLeft().setDrawAxisLine(false);
+
+        chart.getAxisLeft().setAxisMaximum(100f);    // End at 100
+        chart.getAxisLeft().setAxisMinimum(0f);
+
         chart.getAxisRight().setEnabled(false);
     }
 
     /**
      * A helper method to update a chart's data and refresh it.
      */
-    private void updateChart(BarChart chart, BarData barData) {
-        chart.setData(barData);
-        chart.invalidate(); // Refresh the chart
+    private void updateChart(BarChart chart, BarData newBarData) {
+        if (newBarData == null || newBarData.getDataSetCount() == 0) {
+            chart.clear();
+            return;
+        }
+
+        // Get the target value from the new data
+        float newValue = newBarData.getYMax();
+
+        // Get the starting value from our map, defaulting to 0f if not present
+        float previousValue = lastChartValues.getOrDefault(chart, 0f);
+
+        // Create a value animator that goes from the previous value to the new one
+        ValueAnimator animator = ValueAnimator.ofFloat(previousValue, newValue);
+        animator.setDuration(800); // Animation duration in milliseconds
+
+        animator.addUpdateListener(animation -> {
+            // This listener is called for every frame of the animation
+            float animatedValue = (float) animation.getAnimatedValue();
+
+            // Get the chart's data set
+            BarDataSet dataSet = (BarDataSet) newBarData.getDataSetByIndex(0);
+            // Get the entry (the bar)
+            BarEntry entry = dataSet.getEntryForIndex(0);
+            // Update the entry's Y value to the current animated value
+            entry.setY(animatedValue);
+
+            // Update the chart with the modified data and redraw it
+            chart.setData(newBarData);
+            chart.invalidate();
+        });
+
+        // Start the animation
+        animator.start();
+
+        // Store the new value as the "last value" for the next animation
+        lastChartValues.put(chart, newValue);
     }
 }

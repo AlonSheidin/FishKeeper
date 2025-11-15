@@ -19,21 +19,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class FirebaseDataSource {
+public class FirestoreDataSource {
 
     private final FirebaseFirestore db;
 
 
-
-
-    /**
-     * Returns a LiveData that automatically updates when the user's aquarium data changes.
-     */
-
-    public FirebaseDataSource() {
+    public FirestoreDataSource() {
         db = FirebaseFirestore.getInstance();
     }
 
+    /**
+     * Retrieves aquarium data for a specific user from Firestore.
+     */
     public LiveData<List<AquariumData>> getUserAquariumData(String userId) {
         MutableLiveData<List<AquariumData>> liveData = new MutableLiveData<>();
 
@@ -72,7 +69,7 @@ public class FirebaseDataSource {
             Log.e("FirebaseDataSource", "userId is null or empty");
             return;
         }
-
+        
         Log.i("FirebaseDataSource", "addNewData: userId=\""+userId+"\" data="+data.toString());
 
         Map<String, Object> dataMap = new HashMap<>();

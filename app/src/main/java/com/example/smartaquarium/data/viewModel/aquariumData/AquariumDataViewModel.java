@@ -5,9 +5,9 @@ import android.util.Log;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
-import androidx.lifecycle.Transformations; // Make sure this is imported
+import androidx.lifecycle.Transformations;
 
-import com.example.smartaquarium.data.datasource.FirebaseDataSource;
+import com.example.smartaquarium.data.datasource.FirestoreDataSource;
 import com.example.smartaquarium.data.model.AquariumData;
 import com.example.smartaquarium.utils.enums.EnumConnectionStatus;
 import com.example.smartaquarium.utils.interfaces.IConnection;
@@ -28,7 +28,7 @@ public class AquariumDataViewModel extends ViewModel implements IDataListener {
     private static final String NO_USER_ID = "UserNotLoggedIn";
 
     // --- Dependencies & State ---
-    private final FirebaseDataSource firebaseDataSource;
+    private final FirestoreDataSource firestoreDataSource;
 
     // LiveData for single, real-time events
     private final MutableLiveData<AquariumData> latestDataPoint = new MutableLiveData<>();
@@ -47,7 +47,7 @@ public class AquariumDataViewModel extends ViewModel implements IDataListener {
      * You would use a ViewModelFactory to call this constructor.
      */
     public AquariumDataViewModel() {
-        this.firebaseDataSource = new FirebaseDataSource();
+        this.firestoreDataSource = new FirestoreDataSource();
         init();
     }
 
@@ -58,7 +58,7 @@ public class AquariumDataViewModel extends ViewModel implements IDataListener {
         // When the user logs in/out, fetch their historical data from Firestore.
         LiveData<List<AquariumData>> firestoreHistory = Transformations.switchMap(authenticatedUserId, userId -> {
             if (userId != null && !userId.equals(NO_USER_ID)) {
-                return firebaseDataSource.getUserAquariumData(userId);
+                return firestoreDataSource.getUserAquariumData(userId);
             } else {
                 // Return a LiveData with an empty list if logged out.
                 MutableLiveData<List<AquariumData>> emptyList = new MutableLiveData<>();
@@ -112,7 +112,7 @@ public class AquariumDataViewModel extends ViewModel implements IDataListener {
         // 3. Save the new data to Firebase if the user is logged in.
         String userId = authenticatedUserId.getValue();
         if (userId != null && !userId.equals(NO_USER_ID)) {
-            firebaseDataSource.addNewData(userId, newData);
+            firestoreDataSource.addNewData(userId, newData);
         } else {
             offlineDataCache.add(newData);
         }
@@ -147,7 +147,7 @@ public class AquariumDataViewModel extends ViewModel implements IDataListener {
             if (!currentId.equals(NO_USER_ID) && !offlineDataCache.isEmpty()) {
                 Log.d("AquariumDataViewModel", "User logged in. Uploading " + offlineDataCache.size() + " cached items.");
                 for (AquariumData data : offlineDataCache) {
-                    firebaseDataSource.addNewData(currentId, data);
+                    firestoreDataSource.addNewData(currentId, data);
                 }
                 offlineDataCache.clear();
             }

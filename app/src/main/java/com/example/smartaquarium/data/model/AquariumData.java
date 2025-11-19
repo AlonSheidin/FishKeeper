@@ -1,6 +1,7 @@
 package com.example.smartaquarium.data.model;
 
 
+
 import java.util.Date;
 
 public class AquariumData {
@@ -22,9 +23,44 @@ public class AquariumData {
         this.date = new Date(); // Initialize with current time
     }
 
-    public int getTemperature() { return temperature; }
-    public int getPh() { return ph; }
-    public int getOxygen() { return oxygen; }
-    public int getWaterLevel() { return waterLevel; }
-    public Date getDate() { return date; }
+    public int getTemperature() {
+        return temperature;
+    }
+
+    public void setTemperature(int temperature) {
+        this.temperature = temperature;
+    }
+
+    public int getPh() {
+        return ph;
+    }
+
+    public void setPh(int ph) {
+        this.ph = ph;
+    }
+
+    public int getOxygen() {
+        return oxygen;
+    }
+
+    public void setOxygen(int oxygen) {
+        this.oxygen = oxygen;
+    }
+
+    public int getWaterLevel() {
+        return waterLevel;
+    }
+
+    public void setWaterLevel(int waterLevel) {
+        this.waterLevel = waterLevel;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
 }

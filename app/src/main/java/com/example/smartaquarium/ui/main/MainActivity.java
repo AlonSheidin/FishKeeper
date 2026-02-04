@@ -1,5 +1,8 @@
 package com.example.smartaquarium.ui.main;
 
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -10,6 +13,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.smartaquarium.data.viewModel.aquariumData.AquariumDataViewModel;
+import com.example.smartaquarium.service.AquariumAlertJobService;
 import com.example.smartaquarium.service.DummyConnection;
 import com.example.smartaquarium.utils.interfaces.IConnection;
 import com.example.smartaquarium.ui.login.LoginFragment;
@@ -35,10 +39,40 @@ public class MainActivity extends AppCompatActivity {
         auth = FirebaseAuth.getInstance();
         // TODO switch to real connection
         connection = new DummyConnection();
+
         aquariumDataViewModel = new ViewModelProvider(this).get(AquariumDataViewModel.class);
         aquariumDataViewModel.setAsListenerTo(connection);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1);
+            }
+        }
+        initJobScheduler();
     }
+    public void initJobScheduler() {
+        // Use a clear, unique ID for your aquarium job
+        int AQUARIUM_JOB_ID = 888;
 
+        JobScheduler jobScheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
+
+        // Clear any old stuck jobs with the same ID
+        jobScheduler.cancel(AQUARIUM_JOB_ID);
+
+        ComponentName componentName = new ComponentName(this, AquariumAlertJobService.class);
+
+        JobInfo info = new JobInfo.Builder(AQUARIUM_JOB_ID, componentName)
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY) // Works on Wifi/Data
+                .setPersisted(true) // Keeps job after phone restart
+                .setPeriodic(60000) // 15 mins (Android minimum)
+                .build();
+
+        int result = jobScheduler.schedule(info);
+        if (result == JobScheduler.RESULT_SUCCESS) {
+            Log.d("AquariumJob", "Job Scheduled Successfully with ID: " + AQUARIUM_JOB_ID);
+        } else {
+            Log.e("AquariumJob", "Job Scheduling Failed!");
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

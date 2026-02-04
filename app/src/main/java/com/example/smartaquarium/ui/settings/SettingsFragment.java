@@ -1,6 +1,7 @@
 package com.example.smartaquarium.ui.settings;
 
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -18,6 +19,7 @@ import com.example.smartaquarium.R;
 import com.example.smartaquarium.data.model.UserSettings;
 import com.example.smartaquarium.service.UserSettingsService; // <-- Import the new service
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
 
 /**
  * Fragment for managing user settings for all aquarium parameters.
@@ -39,9 +41,11 @@ public class SettingsFragment extends Fragment {
     private TimePicker doNotDisturbStartTimePicker;
     private TimePicker doNotDisturbEndTimePicker;
     private Button saveSettingsButton;
+    private Button logoutButton;
 
     // --- Logic Service ---
     private UserSettingsService userSettingsService; // <-- The only dependency we need
+    private FirebaseAuth firebaseAuth; // <-- Declare FirebaseAuth
 
     @Nullable
     @Override
@@ -57,10 +61,10 @@ public class SettingsFragment extends Fragment {
     private void initializeFragment(View view) {
         // Init the service
         this.userSettingsService = new UserSettingsService();
-
+        this.firebaseAuth = FirebaseAuth.getInstance(); // <-- Initialize FirebaseAuth
         // Init UI components and listeners
         initializeUiComponents(view);
-        setupSaveButtonListener();
+        setupOnClickListener();
 
         // Trigger the data load
         loadAndObserveUserSettings();
@@ -82,13 +86,40 @@ public class SettingsFragment extends Fragment {
         doNotDisturbStartTimePicker = view.findViewById(R.id.time_picker_dnd_start);
         doNotDisturbEndTimePicker = view.findViewById(R.id.time_picker_dnd_end);
         saveSettingsButton = view.findViewById(R.id.button_save_settings);
+        logoutButton = view.findViewById(R.id.button_logout);
 
         doNotDisturbStartTimePicker.setIs24HourView(true);
         doNotDisturbEndTimePicker.setIs24HourView(true);
     }
 
-    private void setupSaveButtonListener() {
-        saveSettingsButton.setOnClickListener(v -> showConfirmationDialog());
+
+    /**
+     * Signs the current user out of Firebase and returns to the Login screen.
+     */
+    private void executeLogout() {
+        Log.d(TAG, "Logging out user.");
+
+        // 1. Sign out from Firebase
+        firebaseAuth.signOut();
+
+        // 2. Hide the Bottom Navigation Bar (since we are going back to Login)
+        View bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
+        if (bottomNav != null) {
+            bottomNav.setVisibility(View.GONE);
+        }
+
+        // 3. Move the user back to LoginFragment
+        // We replace the current fragment in the host container with a new LoginFragment
+        requireActivity().getSupportFragmentManager().beginTransaction()
+                .replace(R.id.nav_host_fragment, new com.example.smartaquarium.ui.login.LoginFragment())
+                .commit();
+
+        Toast.makeText(getContext(), "Logged out successfully", Toast.LENGTH_SHORT).show();
+    }
+
+    private void setupOnClickListener() {
+        saveSettingsButton.setOnClickListener(v -> showSaveConfirmationDialog());
+        logoutButton.setOnClickListener(v -> showLogoutConfirmationDialog()); // <-- 3. Set the listener
     }
 
     /**
@@ -185,12 +216,26 @@ public class SettingsFragment extends Fragment {
 
     // --- Helper methods for Dialog and UI state ---
 
-    private void showConfirmationDialog() {
+    private void showSaveConfirmationDialog() {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Confirm Save")
                 .setMessage("Are you sure you want to save these changes?")
                 .setPositiveButton("Save", (dialog, which) -> executeSaveSettings())
                 .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .create()
+                .show();
+    }
+
+    /**
+     * Shows a confirmation dialog before logging the user out.
+     */
+    private void showLogoutConfirmationDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Confirm Logout")
+                .setMessage("Are you sure you want to log out?")
+                .setPositiveButton("Logout", (dialog, which) -> executeLogout()) // Call logout on confirm
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .setIcon(R.drawable.ic_logout)
                 .create()
                 .show();
     }
@@ -207,6 +252,7 @@ public class SettingsFragment extends Fragment {
         doNotDisturbStartTimePicker.setEnabled(false);
         doNotDisturbEndTimePicker.setEnabled(false);
         saveSettingsButton.setEnabled(false);
+        logoutButton.setEnabled(false);
         saveSettingsButton.setText("Log in to change settings");
     }
 }

@@ -272,5 +272,18 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/time_picker_dnd_end" />
 
+        <Button
+            android:id="@+id/button_logout"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Logout"
+            android:textColor="?attr/colorError"
+            app:strokeColor="?attr/colorError"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/button_save_settings" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

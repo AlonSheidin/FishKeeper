@@ -4,6 +4,7 @@ import android.util.Log;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.smartaquarium.data.model.Aquarium;
 import com.example.smartaquarium.data.model.AquariumData;
 import com.example.smartaquarium.data.model.UserSettings; // Import the UserSettings model
 import com.google.android.gms.tasks.Task;
@@ -13,6 +14,7 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 
 import java.util.ArrayList;
@@ -33,7 +35,9 @@ public class FirestoreDataSource {
     private static final String AQUARIUM_DATA_COLLECTION = "aquariumData";
     private static final String SETTINGS_COLLECTION = "settings"; // A dedicated subcollection for settings
     private static final String SETTINGS_DOCUMENT_NAME = "userSettings";
-
+    private static final String COLLECTION_USERS = "users";
+    private static final String COLLECTION_AQUARIUMS = "aquariums";
+    private static final String COLLECTION_HISTORY = "history";
     private final FirebaseFirestore firestoreDatabase;
 
     /**
@@ -68,6 +72,8 @@ public class FirestoreDataSource {
             return liveData;
         }
 
+
+
         Log.i(TAG, "Getting aquarium data for userId: " + userId);
         firestoreDatabase.collection(USERS_COLLECTION)
                 .document(userId)
@@ -95,7 +101,103 @@ public class FirestoreDataSource {
 
         return liveData;
     }
+    /**
+     * Fetches the list of all aquarium IDs/Names for a specific user.
+     * Path: users/{userId}/aquariums/
+     */
+    public LiveData<List<Aquarium>> getListOfAquariums(String userId) {
+        MutableLiveData<List<Aquarium>> aquariumListLiveData = new MutableLiveData<>();
 
+        if (isInvalid(userId)) {
+            aquariumListLiveData.setValue(new ArrayList<>());
+            return aquariumListLiveData;
+        }
+
+        firestoreDatabase.collection(COLLECTION_USERS)
+                .document(userId)
+                .collection(COLLECTION_AQUARIUMS)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) {
+                        Log.e(TAG, "Error listening to aquarium list updates", error);
+                        return;
+                    }
+
+                    List<Aquarium> aquariumList = new ArrayList<>();
+                    if (value != null) {
+                        for (QueryDocumentSnapshot document : value) {
+                            // Extract the name from the document and the ID from the document reference
+                            String tankName = document.getString("name");
+                            // Fallback to document ID if name field is missing
+                            if (tankName == null) tankName = document.getId();
+
+                            Aquarium aquarium = new Aquarium(document.getId(), tankName);
+                            aquariumList.add(aquarium);
+                        }
+                    }
+                    aquariumListLiveData.setValue(aquariumList);
+                });
+
+        return aquariumListLiveData;
+    }
+    /**
+     * Fetches the historical sensor data for a specific aquarium.
+     * Path: users/{userId}/aquariums/{aquariumId}/history
+     */
+    public LiveData<List<AquariumData>> getAquariumHistory(String userId, String aquariumId) {
+        MutableLiveData<List<AquariumData>> historyLiveData = new MutableLiveData<>();
+
+        firestoreDatabase.collection(COLLECTION_USERS)
+                .document(userId)
+                .collection(COLLECTION_AQUARIUMS)
+                .document(aquariumId)
+                .collection(COLLECTION_HISTORY)
+                .orderBy("timestamp", Query.Direction.ASCENDING)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) {
+                        Log.e(TAG, "Error fetching aquarium history", error);
+                        return;
+                    }
+
+                    List<AquariumData> historyItems = new ArrayList<>();
+                    if (value != null) {
+                        for (QueryDocumentSnapshot document : value) {
+                            AquariumData data = document.toObject(AquariumData.class);
+                            historyItems.add(data);
+                        }
+                    }
+                    historyLiveData.setValue(historyItems);
+                });
+
+        return historyLiveData;
+    }
+
+    /**
+     * Saves new sensor data to the specific aquarium's history collection.
+     */
+    public void saveDataToAquarium(String userId, String aquariumId, AquariumData data) {
+        firestoreDatabase.collection(COLLECTION_USERS)
+                .document(userId)
+                .collection(COLLECTION_AQUARIUMS)
+                .document(aquariumId)
+                .collection(COLLECTION_HISTORY)
+                .add(data)
+                .addOnSuccessListener(documentReference -> Log.d(TAG, "Data saved to aquarium: " + aquariumId))
+                .addOnFailureListener(e -> Log.e(TAG, "Error saving data", e));
+    }
+
+    /**
+     * Creates a new aquarium document for the user.
+     */
+    public Task<Void> createAquarium(String userId, String aquariumName) {
+        // We create a dummy field so the document exists
+        return firestoreDatabase.collection(COLLECTION_USERS)
+                .document(userId)
+                .collection(COLLECTION_AQUARIUMS)
+                .document(aquariumName)
+                .set(new java.util.HashMap<String, Object>() {{
+                    put("createdAt", com.google.firebase.Timestamp.now());
+                }});
+    }
     /**
      * Adds a new aquarium data point to Firestore.
      */
@@ -159,6 +261,7 @@ public class FirestoreDataSource {
 
             if (snapshot != null && snapshot.exists()) {
                 UserSettings settings = snapshot.toObject(UserSettings.class);
+                Log.i(TAG, "getUserSettings: "+settings.getMinTemperature());
                 settingsLiveData.setValue(settings);
                 Log.d(TAG, "User settings loaded successfully from Firestore.");
             } else {

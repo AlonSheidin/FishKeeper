@@ -40,7 +40,7 @@ public class AnalyticsFragment extends Fragment {
         @ColorRes
         private final int colorResId;
         private final Function<AquariumData, Integer> valueExtractor;
-
+ 
         DataType(String label, @ColorRes int colorResId, Function<AquariumData, Integer> valueExtractor) {
             this.label = label;
             this.colorResId = colorResId;
@@ -54,10 +54,31 @@ public class AnalyticsFragment extends Fragment {
         public String toString() { return this.label; }
     }
 
+    public enum DateFilter {
+        LAST_24_HOURS("Last 24 Hours", 24),
+        LAST_7_DAYS("Last 7 Days", 168),
+        LAST_30_DAYS("Last 30 Days", 720),
+        ALL_TIME("All Time", Integer.MAX_VALUE);
+
+        private final String label;
+        private final int hours;
+
+        DateFilter(String label, int hours) {
+            this.label = label;
+            this.hours = hours;
+        }
+
+        public int getHours() { return hours; }
+        @NonNull
+        @Override
+        public String toString() { return label; }
+    }
+
     // --- Views and ViewModel ---
     private LineChart lineChart;
     private Spinner dataTypeSpinner;
-    private AnalyticsViewModel analyticsViewModel; // The ONLY ViewModel this fragment needs to know about
+    private Spinner dateFilterSpinner;
+    private AnalyticsViewModel analyticsViewModel;
 
     @Nullable
     @Override
@@ -76,49 +97,60 @@ public class AnalyticsFragment extends Fragment {
         // Initialize views
         lineChart = view.findViewById(R.id.line_chart);
         dataTypeSpinner = view.findViewById(R.id.spinner_data_type);
+        dateFilterSpinner = view.findViewById(R.id.spinner_date_filter);
 
         // Create the factory to correctly instantiate our ViewModel
-        Application application = requireActivity().getApplication(); // Get the application context
-        FragmentActivity owner = requireActivity(); // Use the hosting activity as the owner
-        AnalyticsViewModelFactory factory = new AnalyticsViewModelFactory(application, owner); // Create the factory
+        Application application = requireActivity().getApplication();
+        FragmentActivity owner = requireActivity();
+        AnalyticsViewModelFactory factory = new AnalyticsViewModelFactory(application, owner);
 
         // Get the ViewModel using the factory
         analyticsViewModel = new ViewModelProvider(this, factory).get(AnalyticsViewModel.class);
 
         setupChartStyling();
-        setupSpinner();
+        setupSpinners();
     }
 
     private void setupChartStyling() {
         lineChart.getDescription().setEnabled(false);
         lineChart.setTouchEnabled(true);
         lineChart.setPinchZoom(true);
+        lineChart.setNoDataText("No data available for the selected range.");
     }
 
-    private void setupSpinner() {
-        ArrayAdapter<DataType> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, DataType.values());
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        dataTypeSpinner.setAdapter(adapter);
+    private void setupSpinners() {
+        // Data Type Spinner
+        ArrayAdapter<DataType> typeAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, DataType.values());
+        typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        dataTypeSpinner.setAdapter(typeAdapter);
 
         dataTypeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                DataType selectedType = (DataType) parent.getItemAtPosition(position);
-                // tell the ViewModel what the user did.
-                analyticsViewModel.setDataType(selectedType);
+                analyticsViewModel.setDataType((DataType) parent.getItemAtPosition(position));
             }
             @Override
-            public void onNothingSelected(AdapterView<?> parent) { /* Do nothing */ }
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        // Date Filter Spinner
+        ArrayAdapter<DateFilter> filterAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, DateFilter.values());
+        filterAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        dateFilterSpinner.setAdapter(filterAdapter);
+
+        dateFilterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                analyticsViewModel.setDateFilter((DateFilter) parent.getItemAtPosition(position));
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
 
-    /**
-     * Sets up a an observer on the processed chart data.
-     */
     private void setupDataObservers() {
         analyticsViewModel.getProcessedChartData().observe(getViewLifecycleOwner(), chartData -> {
             if (chartData != null) {
-                // display the data it is given.
                 lineChart.setData(chartData);
                 moveChartViewToLastEntry();
                 lineChart.invalidate();
@@ -127,9 +159,11 @@ public class AnalyticsFragment extends Fragment {
     }
 
     private void moveChartViewToLastEntry() {
-        if (lineChart.getData() != null) {
+        if (lineChart.getData() != null && lineChart.getData().getEntryCount() > 0) {
             lineChart.setVisibleXRangeMaximum(MAX_VISIBLE_ENTRIES);
             lineChart.moveViewToX(lineChart.getData().getEntryCount());
+        } else {
+            lineChart.clear();
         }
     }
 }

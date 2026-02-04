@@ -93,7 +93,7 @@ public class DummyConnection implements IConnection {
             // Notify all registered listeners with the generated data
             notifyListeners(data);
 
-            // Schedule the next execution of this task after 30 seconds
+            // Schedule the next execution of this task after 5 seconds
             bgHandler.postDelayed(this, 5000);
         }
     };

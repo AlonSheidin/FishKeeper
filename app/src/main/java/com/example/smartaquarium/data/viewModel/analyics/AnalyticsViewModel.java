@@ -8,7 +8,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelStoreOwner;
-import androidx.lifecycle.Transformations; // Import Transformations
+import androidx.lifecycle.MediatorLiveData;
 
 import com.example.smartaquarium.data.model.AquariumData;
 import com.example.smartaquarium.data.viewModel.aquariumData.AquariumDataViewModel;
@@ -18,116 +18,151 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * ViewModel for the Analytics screen. This ViewModel is responsible for all
  * data processing and state management for the analytics chart.
- * It creates a reactive data pipeline that observes the raw data from AquariumDataViewModel
- * and the user's UI selections, transforming them into the final chart data.
  */
 public class AnalyticsViewModel extends AndroidViewModel {
 
     // --- Input LiveData ---
-    // This holds the user's choice from the Spinner in the UI.
     private final MutableLiveData<AnalyticsFragment.DataType> selectedDataType = new MutableLiveData<>();
+    private final MutableLiveData<AnalyticsFragment.DateFilter> selectedDateFilter = new MutableLiveData<>();
 
     // --- Output LiveData ---
-    // This is the ONLY LiveData the fragment needs to observe. It holds the final chart data.
     private final LiveData<LineData> processedChartData;
 
-    /**
-     * Constructor for the ViewModel.
-     * The init() method is called here to set up the reactive data streams.
-     */
     public AnalyticsViewModel(@NonNull Application application, @NonNull ViewModelStoreOwner owner) {
         super(application);
-
-        // Get the single, shared instance of the ViewModel that provides raw data.
         AquariumDataViewModel aquariumDataViewModel = new ViewModelProvider(owner).get(AquariumDataViewModel.class);
 
-        // Call the initialization method to set up our data processing pipeline.
+        // Default values to ensure the pipeline triggers
+        selectedDataType.setValue(AnalyticsFragment.DataType.TEMPERATURE);
+        selectedDateFilter.setValue(AnalyticsFragment.DateFilter.LAST_24_HOURS);
+
         processedChartData = init(aquariumDataViewModel);
     }
 
-    /**
-     * Initializes the reactive data processing pipeline.
-     * This method uses Transformations to link the raw data and user selections to the final chart data.
-     *
-     * @param dataProviderViewModel The ViewModel that supplies the raw aquarium data.
-     * @return A LiveData stream that will always hold the most up-to-date chart data.
-     */
     private LiveData<LineData> init(AquariumDataViewModel dataProviderViewModel) {
-        // We have two "trigger" sources: the historical data and the user's data type selection.
         LiveData<List<AquariumData>> historyDataSource = dataProviderViewModel.getHistory();
+        MediatorLiveData<LineData> mediator = new MediatorLiveData<>();
 
-        // Use Transformations.switchMap to react to changes in the historical data.
-        // If the user logs in/out, historyDataSource will change, and this will re-trigger.
-        return Transformations.switchMap(historyDataSource, history ->
-                // Once we have a history list, use Transformations.map to react to changes
-                // in the user's data type selection.
-                Transformations.map(selectedDataType, dataType -> {
-                    // This inner function is a pure "converter". It takes the raw history and the selected
-                    // data type and converts them into the final LineData for the chart.
-                    return processDataForChart(history, dataType);
-                })
-        );
+        // Helper to re-process whenever any input changes
+        Runnable updatePipeline = () -> {
+            List<AquariumData> history = historyDataSource.getValue();
+            AnalyticsFragment.DataType type = selectedDataType.getValue();
+            AnalyticsFragment.DateFilter filter = selectedDateFilter.getValue();
+
+            if (history != null && type != null && filter != null) {
+                mediator.setValue(processDataForChart(history, type, filter));
+            }
+        };
+
+        mediator.addSource(historyDataSource, h -> updatePipeline.run());
+        mediator.addSource(selectedDataType, t -> updatePipeline.run());
+        mediator.addSource(selectedDateFilter, f -> updatePipeline.run());
+
+        return mediator;
     }
 
-    /**
-     * Exposes the final, processed chart data to be observed by the Fragment.
-     */
     public LiveData<LineData> getProcessedChartData() {
         return processedChartData;
     }
 
-    /**
-     * Called by the Fragment when the user selects a new data type from the spinner.
-     * This updates the selectedDataType LiveData, which automatically triggers the
-     * transformation pipeline to re-process the chart data.
-     */
     public void setDataType(AnalyticsFragment.DataType dataType) {
-        // Only update if the value is new to prevent redundant calculations.
         if (dataType != selectedDataType.getValue()) {
             selectedDataType.setValue(dataType);
         }
     }
 
-    /**
-     * The core logic that processes raw data into chart-ready LineData.
-     * This is a pure function: its output depends only on its inputs.
-     *
-     * @param history The raw list of aquarium data.
-     * @param dataType The currently selected data type for the chart.
-     * @return The final, styled LineData object ready for the UI.
-     */
-    private LineData processDataForChart(List<AquariumData> history, AnalyticsFragment.DataType dataType) {
-        // If the user hasn't selected a type yet, default to Temperature.
-        if (dataType == null) {
-            dataType = AnalyticsFragment.DataType.TEMPERATURE;
+    public void setDateFilter(AnalyticsFragment.DateFilter filter) {
+        if (filter != selectedDateFilter.getValue()) {
+            selectedDateFilter.setValue(filter);
         }
+    }
+    private final MutableLiveData<List<String>> userAquariumsList = new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<String> selectedAquariumId = new MutableLiveData<>();
 
-        // If there's no history data, there's nothing to draw.
+    // 1. Provide the list of aquariums to the Fragment
+    public LiveData<List<String>> getUserAquariumsList() {
+        return userAquariumsList;
+    }
+
+    // 2. Provide the currently selected ID
+    public LiveData<String> getSelectedAquariumId() {
+        return selectedAquariumId;
+    }
+
+    // 3. Logic to change the selected aquarium
+    public void setSelectedAquarium(String aquariumId) {
+        selectedAquariumId.setValue(aquariumId);
+        // Add logic here to reload 'latestData' for the specific aquariumId
+    }
+
+    // 4. Logic to add a new aquarium
+    public void createNewAquarium(String name) {
+        List<String> currentList = userAquariumsList.getValue();
+        if (currentList != null) {
+            currentList.add(name);
+            userAquariumsList.setValue(currentList);
+        }
+    }
+    private LineData processDataForChart(List<AquariumData> history, AnalyticsFragment.DataType dataType, AnalyticsFragment.DateFilter filter) {
         if (history == null || history.isEmpty()) {
-            return new LineData(); // Return an empty LineData to clear the chart
+            return new LineData();
         }
 
-        // 1. Convert raw data into chart Entries
+        // 1. Filter by Date
+        List<AquariumData> filteredList = filterHistoryByDate(history, filter);
+
+        if (filteredList.isEmpty()) {
+            return new LineData();
+        }
+
+        // 2. Convert to chart Entries
         List<Entry> chartEntries = new ArrayList<>();
-        for (int i = 0; i < history.size(); i++) {
-            AquariumData data = history.get(i);
+        for (int i = 0; i < filteredList.size(); i++) {
+            AquariumData data = filteredList.get(i);
             int value = dataType.getValue(data);
             chartEntries.add(new Entry(i, value));
         }
 
-        // 2. Create and style the DataSet
-        LineDataSet chartDataSet = new LineDataSet(chartEntries, dataType.toString());
+        // 3. Create and style the DataSet
+        LineDataSet chartDataSet = new LineDataSet(chartEntries, dataType.toString() + " (" + filter.toString() + ")");
         int color = dataType.getColor(getApplication().getApplicationContext());
         chartDataSet.setColor(color);
         chartDataSet.setCircleColor(color);
         chartDataSet.setDrawValues(false);
 
-        // 3. Return the final LineData object
         return new LineData(chartDataSet);
+    }
+
+    /**
+     * Filters the list of aquarium history data based on a specified time range.
+     *
+     * @param history The complete list of {@link AquariumData} to be filtered.
+     * @param filter The time duration filter (e.g., last 24 hours, last week) to apply.
+     * @return A list of {@link AquariumData} records that fall within the specified time frame.
+     */
+    private List<AquariumData> filterHistoryByDate(List<AquariumData> history, AnalyticsFragment.DateFilter filter) {
+        if (filter == AnalyticsFragment.DateFilter.ALL_TIME) {
+            return history;
+        }
+
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.HOUR, -filter.getHours());
+        Date cutoff = cal.getTime();
+
+        List<AquariumData> filtered = new ArrayList<>();
+        for (AquariumData data : history) {
+            if (data.getDate() != null && data.getDate().after(cutoff)) {
+                filtered.add(data);
+            }
+        }
+        return filtered;
     }
 }
